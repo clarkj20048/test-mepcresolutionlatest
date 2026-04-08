@@ -9,7 +9,7 @@ const initialFormState = {
   pdfLink: '',
 };
 
-function ResolutionForm({ onSuccess }) {
+function ResolutionForm({ onSuccess, title = 'Add Resolution', description = 'Paste the OneDrive PDF file link and publish it directly to the approved resolutions list.', className = '' }) {
   const [formData, setFormData] = useState(initialFormState);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -70,6 +70,7 @@ function ResolutionForm({ onSuccess }) {
       if (response.ok) {
         setMessage('Resolution added successfully.');
         setFormData(initialFormState);
+        window.dispatchEvent(new CustomEvent('resolution-added'));
         if (onSuccess) {
           onSuccess(data);
         }
@@ -85,10 +86,10 @@ function ResolutionForm({ onSuccess }) {
   };
 
   return (
-    <div className="resolution-form-card" id="add-resolution">
+    <div className={`resolution-form-card ${className}`.trim()} id="add-resolution">
       <div className="resolution-form-header">
-        <h2>Add Resolution</h2>
-        <p>Paste the OneDrive PDF file link and publish it directly to the approved resolutions list.</p>
+        <h2>{title}</h2>
+        <p>{description}</p>
       </div>
 
       {message && <div className="success-message">{message}</div>}

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './admindb.css';
 import { apiUrl } from '../config/api';
-import ResolutionForm from '../components/resolutionForm';
 
 const formatDate = (value) => {
   if (!value) {
@@ -26,6 +25,17 @@ function AdminDB() {
     fetchContacts();
     fetchResolutions();
     fetchPendingResolutions();
+  }, []);
+
+  useEffect(() => {
+    const handleResolutionAdded = () => {
+      fetchResolutions();
+    };
+
+    window.addEventListener('resolution-added', handleResolutionAdded);
+    return () => {
+      window.removeEventListener('resolution-added', handleResolutionAdded);
+    };
   }, []);
 
   const fetchContacts = async () => {
@@ -186,8 +196,6 @@ function AdminDB() {
         <h1>Admin Dashboard</h1>
       </div>
       <div className="admindb-content">
-        <ResolutionForm onSuccess={fetchResolutions} />
-
         <div className="resolutions-table-container">
           <h2 className="resolutions-title">Resolutions & Rules</h2>
           {resolutions.length > 0 ? (
