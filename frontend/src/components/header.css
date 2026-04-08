@@ -83,25 +83,30 @@
 }
 
 .nav-links a,
-.header-link-button {
+.nav-links button {
   color: #ffffff;
   text-decoration: none;
   font-size: 0.95rem;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   padding: 0.5rem 0;
+  line-height: normal;
 }
 
-.header-link-button {
+.nav-links button {
+  appearance: none;
+  -webkit-appearance: none;
   background: transparent;
   border: none;
+  margin: 0;
   font-weight: 400;
   font-family: inherit;
   cursor: pointer;
+  vertical-align: baseline;
 }
 
 .nav-links a::after,
-.header-link-button::after {
+.nav-links button::after {
   content: '';
   position: absolute;
   width: 0;
@@ -114,12 +119,12 @@
 }
 
 .nav-links a:hover,
-.header-link-button:hover {
+.nav-links button:hover {
   color: #4caf50;
 }
 
 .nav-links a:hover::after,
-.header-link-button:hover::after {
+.nav-links button:hover::after {
   width: 100%;
 }
 
@@ -204,7 +209,7 @@
   }
 
   .nav-links a,
-  .header-link-button {
+  .nav-links button {
     font-size: 0.88rem;
   }
 
@@ -234,7 +239,7 @@
   }
 
   .nav-links a,
-  .header-link-button {
+  .nav-links button {
     font-size: 0.82rem;
   }
 }
