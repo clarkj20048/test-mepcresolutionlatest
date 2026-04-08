@@ -31,6 +31,108 @@ const validateDateValue = (value) => {
   return !Number.isNaN(parsedDate.getTime());
 };
 
+const stopWords = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'before', 'by', 'for', 'from', 'in',
+  'into', 'is', 'its', 'of', 'on', 'or', 'the', 'to', 'under', 'with', 'without',
+  'series', 'resolution',
+]);
+
+const normalizeTag = (value) => String(value || '')
+  .toLowerCase()
+  .replace(/[^a-z0-9\s-]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const buildAutoTags = ({ title, pdfLink, dateDocketed, datePublished }) => {
+  const uniqueTags = new Set();
+  const addTag = (value) => {
+    const normalized = normalizeTag(value);
+    if (normalized && normalized.length > 1) {
+      uniqueTags.add(normalized);
+    }
+  };
+
+  const addTokens = (text) => {
+    const normalized = normalizeTag(text);
+    if (!normalized) {
+      return;
+    }
+
+    const tokens = normalized.split(' ').filter((token) => token && !stopWords.has(token));
+    tokens.forEach(addTag);
+
+    for (let index = 0; index < tokens.length - 1; index += 1) {
+      addTag(`${tokens[index]} ${tokens[index + 1]}`);
+    }
+
+    for (let index = 0; index < tokens.length - 2; index += 1) {
+      addTag(`${tokens[index]} ${tokens[index + 1]} ${tokens[index + 2]}`);
+    }
+  };
+
+  addTag(title);
+  addTokens(title);
+
+  const resolutionNumberMatch = String(title || '').match(/(?:resolution|res)\s*(?:no\.?)?\s*([0-9]+)/i);
+  if (resolutionNumberMatch) {
+    addTag(`resolution ${resolutionNumberMatch[1]}`);
+    addTag(`res ${resolutionNumberMatch[1]}`);
+    addTag(resolutionNumberMatch[1]);
+  }
+
+  const urlSegments = String(pdfLink || '')
+    .split(/[/?#=&._-]+/)
+    .map((segment) => normalizeTag(segment))
+    .filter(Boolean);
+
+  urlSegments.forEach((segment) => {
+    if (!stopWords.has(segment)) {
+      addTag(segment);
+    }
+  });
+
+  const docketDate = new Date(dateDocketed);
+  const publishedDate = new Date(datePublished);
+
+  if (!Number.isNaN(docketDate.getTime())) {
+    addTag(String(docketDate.getFullYear()));
+    addTag(docketDate.toLocaleString('en-US', { month: 'long' }));
+    addTag(`${docketDate.toLocaleString('en-US', { month: 'long' })} ${docketDate.getFullYear()}`);
+    addTag(`docketed ${docketDate.getFullYear()}`);
+  }
+
+  if (!Number.isNaN(publishedDate.getTime())) {
+    addTag(`published ${publishedDate.getFullYear()}`);
+    addTag(publishedDate.toLocaleString('en-US', { month: 'long' }));
+    addTag(`${publishedDate.toLocaleString('en-US', { month: 'long' })} ${publishedDate.getFullYear()}`);
+  }
+
+  [
+    'erc',
+    'resolution file',
+    'resolution pdf',
+    'onedrive pdf',
+    'official issuance',
+    'regulatory issuance',
+    'document archive',
+    'public document',
+  ].forEach(addTag);
+
+  const tags = Array.from(uniqueTags);
+  if (tags.length < 10) {
+    [
+      'energy regulation',
+      'commission order',
+      'published document',
+      'docket record',
+      'resolution archive',
+      'searchable pdf',
+    ].forEach(addTag);
+  }
+
+  return Array.from(uniqueTags).slice(0, 20);
+};
+
 const getNextSequence = async (name) => {
   const counter = await Counter.findOneAndUpdate(
     { name },
@@ -39,6 +141,24 @@ const getNextSequence = async (name) => {
   );
 
   return counter.seq;
+};
+
+const syncResolutionSequence = async () => {
+  const resolutions = await Resolution.find().sort({ resolutionId: 1, createdAt: 1 });
+
+  for (let index = 0; index < resolutions.length; index += 1) {
+    const expectedId = index + 1;
+    if (resolutions[index].resolutionId !== expectedId) {
+      resolutions[index].resolutionId = expectedId;
+      await resolutions[index].save();
+    }
+  }
+
+  await Counter.findOneAndUpdate(
+    { name: 'resolutionId' },
+    { seq: resolutions.length },
+    { upsert: true, new: true }
+  );
 };
 
 const buildResolutionLookup = (value) => {
@@ -98,6 +218,7 @@ const buildResolutionPayload = (body = {}, fallbackStatus = 'approved') => {
   return {
     title,
     pdfLink,
+    tags: buildAutoTags({ title, pdfLink, dateDocketed, datePublished }),
     dateDocketed: new Date(dateDocketed),
     datePublished: new Date(datePublished),
     status: body.status || fallbackStatus,
@@ -192,6 +313,7 @@ const deleteResolution = async (req, res) => {
     }
 
     await RecentlyViewed.deleteMany({ resolutionId: normalizeResolutionKey(req.params.id) });
+    await syncResolutionSequence();
 
     return res.json({ success: true, message: 'Resolution deleted successfully' });
   } catch (error) {

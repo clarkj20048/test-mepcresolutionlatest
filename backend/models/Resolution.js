@@ -18,6 +18,10 @@ const resolutionSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    tags: {
+      type: [String],
+      default: [],
+    },
     dateDocketed: {
       type: Date,
       required: true,
