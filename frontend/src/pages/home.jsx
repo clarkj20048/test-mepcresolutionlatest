@@ -389,7 +389,7 @@ function Home() {
                   </table>
                 </div>
               ) : (
-                <p className="no-results">No resolutions found. Add some using the Add page.</p>
+                <p className="no-results">No resolutions found. Add one from the admin dashboard.</p>
               )}
             </div>
           )}

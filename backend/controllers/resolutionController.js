@@ -1,8 +1,13 @@
 const mongoose = require('mongoose');
 const Resolution = require('../models/Resolution');
 const RecentlyViewed = require('../models/RecentlyViewed');
+const Counter = require('../models/Counter');
 
 const normalizeResolutionKey = (value) => String(value || '').trim();
+const getNumericId = (value) => {
+  const numericId = Number.parseInt(value, 10);
+  return Number.isNaN(numericId) ? null : numericId;
+};
 
 const isValidHttpsUrl = (value) => {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -26,13 +31,34 @@ const validateDateValue = (value) => {
   return !Number.isNaN(parsedDate.getTime());
 };
 
+const getNextSequence = async (name) => {
+  const counter = await Counter.findOneAndUpdate(
+    { name },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+
+  return counter.seq;
+};
+
 const buildResolutionLookup = (value) => {
   const key = normalizeResolutionKey(value);
-  if (!mongoose.Types.ObjectId.isValid(key)) {
+  const numericId = getNumericId(key);
+  const conditions = [];
+
+  if (numericId !== null) {
+    conditions.push({ resolutionId: numericId });
+  }
+
+  if (mongoose.Types.ObjectId.isValid(key)) {
+    conditions.push({ _id: key });
+  }
+
+  if (conditions.length === 0) {
     return null;
   }
 
-  return { _id: key };
+  return conditions.length === 1 ? conditions[0] : { $or: conditions };
 };
 
 const formatResolutionResponse = (resolution) => {
@@ -40,11 +66,7 @@ const formatResolutionResponse = (resolution) => {
     return null;
   }
 
-  const data = resolution.toJSON();
-  return {
-    ...data,
-    id: data.id || resolution._id.toString(),
-  };
+  return resolution.toJSON();
 };
 
 const buildResolutionPayload = (body = {}, fallbackStatus = 'approved') => {
@@ -84,7 +106,7 @@ const buildResolutionPayload = (body = {}, fallbackStatus = 'approved') => {
 
 const getResolutions = async (req, res) => {
   try {
-    const resolutions = await Resolution.find({ status: { $ne: 'pending' } }).sort({ datePublished: -1, createdAt: -1 });
+    const resolutions = await Resolution.find({ status: { $ne: 'pending' } }).sort({ resolutionId: 1, createdAt: 1 });
     return res.json(resolutions.map(formatResolutionResponse));
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch resolutions' });
@@ -111,7 +133,10 @@ const getResolutionById = async (req, res) => {
 
 const createResolution = async (req, res) => {
   try {
-    const newData = await Resolution.create(buildResolutionPayload(req.body, req.body.status || 'approved'));
+    const payload = buildResolutionPayload(req.body, req.body.status || 'approved');
+    payload.resolutionId = await getNextSequence('resolutionId');
+
+    const newData = await Resolution.create(payload);
     return res.status(201).json(formatResolutionResponse(newData));
   } catch (error) {
     return res.status(400).json({ message: error.message || 'Failed to create resolution' });
@@ -176,7 +201,7 @@ const deleteResolution = async (req, res) => {
 
 const getPendingResolutions = async (req, res) => {
   try {
-    const resolutions = await Resolution.find({ status: 'pending' }).sort({ createdAt: -1 });
+    const resolutions = await Resolution.find({ status: 'pending' }).sort({ resolutionId: 1, createdAt: 1 });
     return res.json(resolutions.map(formatResolutionResponse));
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch pending resolutions' });
@@ -185,12 +210,15 @@ const getPendingResolutions = async (req, res) => {
 
 const createPendingResolution = async (req, res) => {
   try {
-    const resolution = await Resolution.create(buildResolutionPayload(req.body, 'pending'));
+    const payload = buildResolutionPayload(req.body, 'pending');
+    payload.resolutionId = await getNextSequence('resolutionId');
+
+    const resolution = await Resolution.create(payload);
 
     return res.status(201).json({
       success: true,
       message: 'Pending resolution added successfully',
-      resolutionId: resolution._id.toString(),
+      resolutionId: resolution.resolutionId,
       resolution: formatResolutionResponse(resolution),
     });
   } catch (error) {

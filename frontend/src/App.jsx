@@ -4,7 +4,6 @@ import Footer from "./components/footer";
 import Home from "./pages/home";
 import About from "./pages/about";
 import Contact from "./pages/contact";
-import Add from "./pages/add";
 import Login from "./pages/login";
 import AdminDB from "./pages/admindb";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -35,7 +34,6 @@ function AppRoutes() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/add" element={<Add />} />
             <Route path="/login" element={<Login />} />
             <Route 
               path="/admindb" 

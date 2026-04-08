@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const resolutionSchema = new mongoose.Schema(
   {
+    resolutionId: {
+      type: Number,
+      required: true,
+      unique: true,
+      index: true,
+    },
     title: {
       type: String,
       required: true,
@@ -32,9 +38,11 @@ const resolutionSchema = new mongoose.Schema(
     toJSON: {
       virtuals: true,
       transform: (doc, ret) => {
+        ret.id = ret.resolutionId;
         ret.created_at = ret.createdAt;
         ret.updated_at = ret.updatedAt;
         delete ret._id;
+        delete ret.resolutionId;
         delete ret.createdAt;
         delete ret.updatedAt;
         return ret;

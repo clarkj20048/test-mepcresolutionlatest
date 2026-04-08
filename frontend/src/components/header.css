@@ -44,6 +44,12 @@
   margin: 0 auto;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .header h1 {
   margin: 0;
   font-size: 1.2rem;
@@ -77,6 +83,38 @@
   gap: 1.25rem;
   margin: 0;
   padding: 0;
+}
+
+.admin-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.admin-add-button,
+.admin-logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.6rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-add-button:hover,
+.admin-logout-button:hover {
+  background: #8de09f;
+  color: #153927;
+  border-color: #8de09f;
+  transform: translateY(-1px);
 }
 
 /* Nav links */
@@ -129,7 +167,6 @@
 .nav-links li:nth-child(2) { animation-delay: 0.15s; }
 .nav-links li:nth-child(3) { animation-delay: 0.2s; }
 .nav-links li:nth-child(4) { animation-delay: 0.25s; }
-.nav-links li:nth-child(5) { animation-delay: 0.3s; }
 
 .nav-links li:hover {
   transform: translateY(-1px);
@@ -145,8 +182,23 @@
     gap: 1rem;
   }
 
+  .header-actions {
+    gap: 0.75rem;
+  }
+
+  .admin-shortcuts {
+    gap: 0.5rem;
+  }
+
   .nav-links a {
     font-size: 0.88rem;
+  }
+
+  .admin-add-button,
+  .admin-logout-button {
+    min-height: 36px;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.84rem;
   }
 
   .header-logo {
@@ -155,16 +207,33 @@
 }
 
 @media (max-width: 480px) {
+  .header nav {
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
   .header h1 {
     font-size: 1rem;
   }
 
   .nav-links {
     gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .nav-links a {
     font-size: 0.82rem;
+  }
+
+  .admin-shortcuts {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 }
 
@@ -214,4 +283,3 @@
     transform: translateY(0);
   }
 }
-
